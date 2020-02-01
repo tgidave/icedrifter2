@@ -29,7 +29,7 @@
 
 #include <Wire.h>
 
-#define BME_POWER 20
+#define BME_POWER 30
 
 void setup()
 {

@@ -25,7 +25,7 @@
 #define BMP_MOSI 17 
 #define BMP_CS 10
 
-#define BMP280_POWER 20
+#define BMP280_POWER 30
 
 Adafruit_BMP280 bmp; // I2C
 //Adafruit_BMP280 bmp(BMP_CS); // hardware SPI

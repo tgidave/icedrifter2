@@ -1,7 +1,7 @@
 /*!                                                                              
- *  @file icedrifter2.cpp                                                  
+ *  @file icedrifter.ino                                                  
  *                                                                               
- *  @mainpage Code to implement the Icedrifter bouy.                     
+ *  @mainpage Code to implement the Icedrifter buoy.                     
  *                                                                               
  *  @section intro_sec Introduction                                              
  *  
@@ -21,13 +21,16 @@
  *                                                                               
  *  @section HISTORY                                                             
  *                                                                               
- *  v2.0 - First release                                                         
+ *  v1.0 - First release                                                         
  */
 
-#include <Arduino.h>
 #include <LowPower.h>
-#include <time.h>
+#include <TimeLib.h>
+#include <Time.h>
+
+//#include <arduino.h>
 #include <avr/wdt.h>
+
 #include <TinyGPS++.h> // NMEA parsing: http://arduiniana.org
 #include <PString.h> // String buffer formatting: http://arduiniana.org
 
@@ -40,22 +43,6 @@
 #include "serialmux.h"
 
 #define CONSOLE_BAUD 115200
-
-bool firstTime;   /// Set true in the setup function and set false after the first
-                  /// time through the loop function.  Used to indicate when to
-/// capture the last boot date and time.
-
-bool gotFullFix;  /// Indicates that a Full fix was received.
-
-int noFixFoundCount;  /// Number of times the GPS device could not get a fix.
-
-int fixFound; /// indicates weather the last call to the GPS system returned a fix.
-
-icedrifterData idData;  /// Structure for accumulating and sending sensor data,
-
-//iceDrifterChunk idcChunk;
-
-time_t lbTime;  /// Time and date of the last boot.
 
 // This table is used to determine when to report data through the
 // Iridium system.  It is set up as UTC times from midnight to 23:00
@@ -77,8 +64,8 @@ const bool timeToReport[24] = {
   false,  // 04:00 UTC
   false,  // 05:00 UTC
   false,  // 06:00 UTC
-  true,   // 07:00 UTC - Midnight Mountain standard time
-  false,  // 08:00 UTC
+  false,  // 07:00 UTC - Midnight Mountain standard time
+  true,   // 08:00 UTC
   false,  // 09:00 UTC
   false,  // 10:00 UTC
   false,  // 11:00 UTC
@@ -89,35 +76,47 @@ const bool timeToReport[24] = {
   false,  // 16:00 UTC
   false,  // 17:00 UTC
   false,  // 18:00 UTC
-  true,   // 19:00 UTC - Noon Mountain standard time
-  false,  // 20:00 UTC
+  false,  // 19:00 UTC - Noon Mountain standard time
+  true,   // 20:00 UTC
   false,  // 21:00 UTC
   false,  // 22:00 UTC
   false,  // 23:00 UTC
 };
 
-/*
-enum period_t { /// Values for setting the watchdog timer.
-  SLEEP_15MS,
-  SLEEP_30MS,
-  SLEEP_60MS,
-  SLEEP_120MS,
-  SLEEP_250MS,
-  SLEEP_500MS,
-  SLEEP_1S,
-  SLEEP_2S,
-  SLEEP_4S,
-  SLEEP_8S,
-  SLEEP_FOREVER
-};
-*/
+//enum period_t { /// Values for setting the watchdog timer.
+//  SLEEP_15MS,
+//  SLEEP_30MS,
+//  SLEEP_60MS,
+//  SLEEP_120MS,
+//  SLEEP_250MS,
+//  SLEEP_500MS,
+//  SLEEP_1S,
+//  SLEEP_2S,
+//  SLEEP_4S,
+//  SLEEP_8S,
+//  SLEEP_FOREVER
+//};
+
+bool firstTime;   /// Set true in the setup function and set false after the first
+                  /// time through the loop function.  Used to indicate when to
+/// capture the last boot date and time.
+
+bool gotFullFix;  /// Indicates that a Full fix was received.
+
+int noFixFoundCount;  /// Number of times the GPS device could not get a fix.
+
+int fixFound; /// indicates weather the last call to the GPS system returned a fix.
+
+icedrifterData idData;  /// Structure for accumulating and sending sensor data,
+
+time_t lbTime;  /// Time and date of the last boot.
 
 const char hexchars[] = "0123456789ABCDEF";
 
 void printHexChar(uint8_t x) {
   Serial.print(hexchars[(x >> 4)]);
   Serial.print(hexchars[(x & 0x0f)]);
-} 
+}
 
 /// powerDown - Put processor into low power mode.
 ///
@@ -129,16 +128,15 @@ void printHexChar(uint8_t x) {
 ///
 /// \param void
 /// \return void
-/*
-void powerDown(void) {
-  ADCSRA &= ~(1 << ADEN);
-  wdt_enable(SLEEP_8S);
-  WDTCSR |= (1 << WDIE);
-  sleepMode(SLEEP_POWER_SAVE);
-  sleep();
-  noSleep();
-}
 
+//void powerDown(void) {
+//  ADCSRA &= ~(1 << ADEN);
+//  wdt_enable(SLEEP_8S);
+//  WDTCSR |= (1 << WDIE);
+//  sleepMode(SLEEP_POWER_SAVE);
+//  sleep();
+//  noSleep();
+//}
 
 /// <summary>
 /// ISR - Interrupt Service Routine for handeling the watchdog
@@ -147,11 +145,11 @@ void powerDown(void) {
 /// <param> WDT_vect </param>
 /// <returns>"Nothing"</returns>
 
-ISR(WDT_vect) {
+//ISR(WDT_vect) {
   /// WDIE & WDIF is cleared in hardware upon entering this ISR
-  wdt_disable();
-}
-*/
+//  wdt_disable();
+//}
+
 /// <summary>
 /// Accumulate and send data. This function captures the sender
 /// data and sends that data to the user.
@@ -164,33 +162,22 @@ void accumulateAndSendData(void) {
   int i, j;
 
   int chainRetryCount;
-  int totalDataLength; 
+  int totalDataLength;
   int recCount;
-  int cdError;
-  uint8_t * wkPtr; 
+  uint8_t* wkPtr;
 
 
-
-  idData.idSwitches = idData.idTempSensorCount = idData.idLightSensorCount = 0; 
+  totalDataLength = BASE_RECORD_LENGTH;
+  idData.idSwitches = idData.idTempByteCount = idData.idLightByteCount = idData.idcdError = 0;
 
 #ifdef PROCESS_REMOTE_TEMP_SWITCH
   idData.idSwitches |= PROCESS_REMOTE_TEMP_SWITCH;
-#endif
+#endif // PROCESS_REMOTE_TEMP_SWITCH
 
 #ifdef PROCESS_CHAIN_DATA
-  idData.idSwitches |= PEOCESS_CHAIN_DATA_SWITCH;
-  idData.idTempSensorCount = TEMP_SENSOR_COUNT;
-  idData.idLightSensorCount = LIGHT_SENSOR_COUNT;
-#endif 
-
-#ifdef SEND_RGB
-  idData.idSwitches |= SEND_RGB_SWITCH;
-#endif
-
-//  idData.idRecordType[0] = 'I';
-//  idData.idRecordType[1] = 'D';
-//  idData.idRecordType[2] = '0';
-//  idData.idRecordType[3] = '0';
+  idData.idSwitches |= PROCESS_CHAIN_DATA_SWITCH;
+  idData.idTempByteCount = idData.idLightByteCount = 0;
+#endif // PROCESS_CHAIN_DATA
 
   idData.idLastBootTime = lbTime;
 
@@ -198,9 +185,6 @@ void accumulateAndSendData(void) {
     idData.idGPSTime = 0;
     idData.idLatitude = 0;
     idData.idLongitude = 0;
-    idData.idAltitude = 0;
-    idData.idSpeed = 0;
-    idData.idCourse = 0;
   }
 
   getBMP280Data(&idData);
@@ -211,113 +195,30 @@ void accumulateAndSendData(void) {
   idData.idRemoteTemp = 0;
 #endif // PROCESS_REMOTE_TEMP
 
-  cdError = 0;
 #ifdef PROCESS_CHAIN_DATA
-  chainRetryCount = 0;
-
-  while ((cdError = processChainData((uint8_t *)&idData.idChainData)) != 0) {
-    ++chainRetryCount;
-    if (chainRetryCount >= MAX_CHAIN_RETRIES) {
-      break;
-    }
-  }
-
-#endif // PROCESS_CHAIN_DATA
-  idData.idcdError = cdError;
-  totalDataLength = BASE_RECORD_LENGTH;
-
-#ifdef PROCESS_CHAIN_DATA
-  if (cdError == 0) {
-    totalDataLength += (TEMP_DATA_SIZE + LIGHT_DATA_SIZE);
-  }
+  processChainData(&idData);
+  totalDataLength += (idData.idTempByteCount + idData.idLightByteCount);
 #endif  // PROCESS_CHAIN_DATA
 
-  wkPtr = (uint8_t *)&idData; 
+  wkPtr = (uint8_t*)&idData;
 
 #ifdef SERIAL_DEBUG
-  DEBUG_SERIAL.print(F("Dumping data record\r\n"));
+  DEBUG_SERIAL.print(F("Dumping data record\n"));
   DEBUG_SERIAL.print(F("Address = "));
   DEBUG_SERIAL.print((uint32_t)wkPtr, HEX);
   DEBUG_SERIAL.print(F(" size = "));
   DEBUG_SERIAL.print(totalDataLength);
-  DEBUG_SERIAL.print(F("\r\n"));
+  DEBUG_SERIAL.print(F("\n"));
 
   for (i = 0; i < totalDataLength; i++) {
     printHexChar((uint8_t)*wkPtr);
     ++wkPtr;
   }
 
-  DEBUG_SERIAL.print(F("\r\n"));
-#endif
-/*
-  recCount = 0;
-  idPtr = (uint8_t *)&idData;
-  chunkPtr = (uint8_t*)&idcChunk.idcBuffer;
+  DEBUG_SERIAL.print(F("\n"));
+#endif // SERIAL_DEBUG
 
-  while (totalDataLength > 0) {
-    idcChunk.idcSendTime = idData.idGPSTime;
-    idcChunk.idcRecordType[0] = 'I';
-    idcChunk.idcRecordType[1] = 'D';
-    idcChunk.idcRecordNumber = recCount;
-
-    if (totalDataLength > MAX_CHUNK_LENGTH) {
-      chunkLength = (MAX_CHUNK_LENGTH + CHUNK_HEADER_SIZE);
-      totalDataLength -= MAX_CHUNK_LENGTH;
-    } else {
-      chunkLength = (totalDataLength + CHUNK_HEADER_SIZE);
-      totalDataLength = 0;
-    }
-
-    memmove(chunkPtr, idPtr, chunkLength);
-    ++recCount;
-    idPtr += chunkLength;
-
-#ifdef NEVER_TRANSMIT
-    DEBUG_SERIAL.print(F("Transmission disabled by NEVER_TRANSMIT switch.\r\n"));
-#else
-    rbTransmitIcedrifterData(&idcChunk) chunkLength + CHUNK_HEADER_SIZE);
-#endif // NEVER_TRANSMIT
-  }
-*/
   rbTransmitIcedrifterData(&idData, totalDataLength);
-/*
-#ifdef SERIAL_DEBUG
-  DEBUG_SERIAL.print(F("Sending this data:\r\n"));
-  DEBUG_SERIAL.print(F("idData.idRecordType   = "));
-  DEBUG_SERIAL.print(idData.idRecordType[0]);
-  DEBUG_SERIAL.print(idData.idRecordType[1]);
-  DEBUG_SERIAL.print(idData.idRecordType[2]);
-  DEBUG_SERIAL.print(idData.idRecordType[3]);
-  DEBUG_SERIAL.print(F("\r\nidData.idLastBootTime = "));
-  DEBUG_SERIAL.print(idData.idLastBootTime);
-  DEBUG_SERIAL.print(F("\r\nidData.idGPSTime      = "));
-  DEBUG_SERIAL.print(idData.idGPSTime);
-  DEBUG_SERIAL.print(F("\r\nidData.Latitude       = "));
-  DEBUG_SERIAL.print(idData.idLatitude);
-  DEBUG_SERIAL.print(F("\r\nidData.idLongitude    = "));
-  DEBUG_SERIAL.print(idData.idLongitude);
-  DEBUG_SERIAL.print(F("\r\nidData.idAltitude     = "));
-  DEBUG_SERIAL.print(idData.idAltitude);
-  DEBUG_SERIAL.print(F("\r\nidData.idSpeed        = "));
-  DEBUG_SERIAL.print(idData.idSpeed);
-  DEBUG_SERIAL.print(F("\r\nidData.idCourse       = "));
-  DEBUG_SERIAL.print(idData.idCourse);
-  DEBUG_SERIAL.print(F("\r\nidData.idTemperature  = "));
-  DEBUG_SERIAL.print(idData.idTemperature);
-  DEBUG_SERIAL.print(F("\r\nidData.idPressure     = "));
-  DEBUG_SERIAL.print(idData.idPressure);
-  DEBUG_SERIAL.print(F("\r\nidData.idRemoteTemp   = "));
-  DEBUG_SERIAL.print(idData.idRemoteTemp);
-  DEBUG_SERIAL.print(F("\r\n"));
-#endif
-
-#ifdef NEVER_TRANSMIT
-  DEBUG_SERIAL.print(F("Transmission disabled by NEVER_TRANSMIT switch.\r\n"));
-#else
-  rbTransmitIcedrifterData(&idData, sizeof(idData));
-#endif
-*/
-
 }
 
 //! setup - This is an arduino defined routine that is called only once after the processor is booted.
@@ -328,39 +229,38 @@ void setup() {
   pinMode(muxAPort, OUTPUT);
   pinMode(muxBPort, OUTPUT);
 
-  serialMuxInit();
-  serialMuxSetToOff();
+  setSerialMuxInit();
 
   pinMode(GPS_POWER_PIN, OUTPUT);
-  digitalWrite(GPS_POWER_PIN, LOW);
+  digitalWrite(GPS_POWER_PIN, HIGH);
 
   pinMode(BMP280_POWER_PIN, OUTPUT);
   digitalWrite(BMP280_POWER_PIN, LOW);
 
+  pinMode(ROCKBLOCK_POWER_PIN, OUTPUT);
+  digitalWrite(ROCKBLOCK_POWER_PIN, HIGH);
+
 #ifdef PROCESS_REMOTR_TEMP
   pinMode(DS18B20_POWER_PIN, OUTPUT);
   digitalWrite(DS18B20_POWER_PIN, LOW);
-#endif
+#endif // PROCESS_REMOTR_TEMP
 
 #ifdef PROCESS_CHAIN_DATA
   pinMode(CHAIN_POWER_PIN, OUTPUT);
   digitalWrite(CHAIN_POWER_PIN, LOW);
-#endif
-
-  pinMode(ROCKBLOCK_POWER_PIN, OUTPUT);
-  digitalWrite(ROCKBLOCK_POWER_PIN, LOW);
+#endif // PROCESS_CHAIN_DATA
 
 #ifdef SERIAL_DEBUG
   //! Start the serial ports
   DEBUG_SERIAL.begin(CONSOLE_BAUD);
-#endif
+#endif // SERIAL_DEBUG
 
   gotFullFix = false; //! Clear the GPS full fix switch so the first call to the loop function requests a full fix.
   firstTime = true;
 
 #ifdef SERIAL_DEBUG
-  DEBUG_SERIAL.print(F("Setup done\r\n")); //! Let the user know we are done with the setup function.
-#endif
+  DEBUG_SERIAL.print(F("Setup done\n")); //! Let the user know we are done with the setup function.
+#endif // SERIAL_DEBUG
 
 }
 
@@ -404,6 +304,13 @@ void loop() {
 
 #ifdef TEST_ALL
   accumulateAndSendData();
+#elif defined(TRANSMIT_AT_BOOT)
+  if (firstTime ||
+      ((fixFound && timeToReport[hour(idData.idGPSTime)] == true) ||
+       noFixFoundCount >= 24)) {
+    noFixFoundCount = 0;
+    accumulateAndSendData();
+  }
 #else
   if (!firstTime &&
       ((fixFound && timeToReport[hour(idData.idGPSTime)] == true) ||
@@ -411,17 +318,17 @@ void loop() {
     noFixFoundCount = 0;
     accumulateAndSendData();
   }
-#endif
+#endif // TEST_ALL
 
   // Accumulating and sending the data can take a while so update the time again.
   fixFound = gpsGetFix(FIX_TIME, &idData);
   firstTime = false;
 
-  // If a GPS fix was found
+  //! If a GPS fix was found
   if (fixFound) {
-    // Calculate the minutes until the next half hour,
+    //! Calculate the minutes until the next half hour,
     sleepMins = 90 - minute(idData.idGPSTime);
-    // If it less than 15 minutes until the nex half hour,
+    //! If it less than 15 minutes until the nex half hour,
     if (sleepMins >= 75) {
       sleepMins -= 60;
     }
@@ -429,17 +336,17 @@ void loop() {
 #ifdef SERIAL_DEBUG
     DEBUG_SERIAL.print(F("Fix found - sleep "));
     DEBUG_SERIAL.print(sleepMins);
-    DEBUG_SERIAL.print(F(" minutes\r\n"));
+    DEBUG_SERIAL.print(F(" minutes\n"));
     DEBUG_SERIAL.flush();
     DEBUG_SERIAL.end();
-#endif
+#endif // SERIAL_DEBUG
     sleepSecs = sleepMins * 60;
   } else {
 #ifdef SERIAL_DEBUG
-    DEBUG_SERIAL.print(F("Fix not found - sleep 60 minutes\r\n"));
+    DEBUG_SERIAL.print(F("Fix not found - sleep 60 minutes\n"));
     DEBUG_SERIAL.flush();
     DEBUG_SERIAL.end();
-#endif
+#endif // SERIAL_DEBUG
     sleepSecs = 3600;
   }
 
@@ -450,7 +357,8 @@ void loop() {
 
 #ifdef SERIAL_DEBUG
   DEBUG_SERIAL.begin(CONSOLE_BAUD);
-  DEBUG_SERIAL.print(F("wake up\r\n"));
+  DEBUG_SERIAL.print(F("wake up\n"));
   DEBUG_SERIAL.flush();
-#endif
+#endif // SERIAL_DEBUG
 }
+

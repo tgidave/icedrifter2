@@ -20,20 +20,35 @@
  *  v1.0 - First release                                                         
  */
 #include <Arduino.h>
-#include "icedrifter2.h"
 #include "serialmux.h"
 
-const uint8_t muxTable[4][3] = { 
+const uint8_t muxTable[5][3] = { 
 // This table is set up the same as the function table in the SN74LV4052A 
 // datasheet on page 12.  The columns are:
 //{ INH,   B,   A  } which corrisponds to muxINHPort, muxBPort, muxAPort.
-  { HIGH, LOW, LOW },
-  { LOW, HIGH, LOW },
+  { LOW, LOW, LOW },
   { LOW, LOW, HIGH },
+  { LOW, HIGH, LOW },
   { LOW, HIGH, HIGH },
+  ( HIGH, LOW, LOW ),
 };
 
-void serialMuxInit() {
+enum muxCmd {
+  muxUnused,
+  muxGPS,        
+  muxRockBlock,  
+  muxChain,
+  muxOff,        
+  muxCmdMax,      
+};
+
+enum muxIx {
+  muxINH,
+  muxB,
+  muxA,
+};
+
+void setSerialMuxInit() {
   pinMode(muxINHPort, OUTPUT);
   pinMode(muxAPort, OUTPUT);
   pinMode(muxBPort, OUTPUT);
@@ -42,12 +57,12 @@ void serialMuxInit() {
   digitalWrite(muxBPort, LOW);
 }
 
-void seialMuxSetTo( int muxCommand ) {
+void setSerialMux( int muxCommand ) {
   if (!((muxCommand >= 0) && (muxCommand < muxCmdMax))) {
 #ifdef SERIAL_DEBUG
     DEBUG_SERIAL.print(F("Mux command out of range = "));
     DEBUG_SERIAL.print( muxCommand ); 
-    DEBUG_SERIAL.print(F("\n"));
+    DEBUG_SERIAL.print(F("\r\n"));
 #endif
     return;
   }
@@ -59,18 +74,18 @@ void seialMuxSetTo( int muxCommand ) {
 
 }
 
-void serialMuxSetToOff(void) {
-  seialMuxSetTo(muxOff);
+void setSerialMuxOff(void) {
+  setSerialMux(muxOff);
 }
 
-void serialMuxSetToGPS(void) {
-  seialMuxSetTo(muxGPS);
+void setSerialMuxToGPS(void) {
+  setSerialMux(muxGPS);
 }
 
-void serialMuxSetToRockBlock(void) {
-  seialMuxSetTo(muxRockBlock);
+void setSerialMuxToRockBlock(void) {
+  setSerialMux(muxRockBlock);
 }
 
-void serialMuxSetToChain(void) {
-  seialMuxSetTo(muxChain);
+void setSerialMuxToChain(void) {
+  setSerialMux(muxChain);
 }

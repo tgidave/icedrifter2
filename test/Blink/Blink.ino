@@ -22,18 +22,25 @@
   http://www.arduino.cc/en/Tutorial/Blink
 */
 
-const int BLINKLED = 18;
+const int BLINKLED = 22;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(BLINKLED, OUTPUT);
+  Serial.begin(115200);
+  Serial.println("Hello World.");
+  delay(1000);
+//  pinMode(15, OUTPUT);
+//  digitalWrite(15,HIGH);
 }
 
 // the loop function runs over and over again forever
 void loop() {
+  Serial.println("Light on.");
   digitalWrite(BLINKLED, HIGH);   // turn the LED on (HIGH is the voltage level)
   delay(1000);                       // wait for a second
+  Serial.println("Light off.");
   digitalWrite(BLINKLED, LOW);    // turn the LED off by making the voltage LOW
   delay(1000);                       // wait for a second
 }

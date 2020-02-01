@@ -6,7 +6,7 @@
 #define BMP_MOSI 17
 #define BMP_CS 10
 
-#define BMP280_POWER_PIN COMMON_POWER_PIN
+#define BMP280_POWER_PIN 30
 
 void getBMP280Data(icedrifterData* idData);
 

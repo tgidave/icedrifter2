@@ -4,8 +4,8 @@
 #include <DallasTemperature.h>
 /********************************************************************/
 // Data wire is plugged into pin 2 on the Arduino 
-#define ONE_WIRE_BUS 21
-#define DS18B20_POWER 20
+#define ONE_WIRE_BUS 28
+#define DS18B20_POWER 29
 /********************************************************************/
 // Setup a oneWire instance to communicate with any OneWire devices  
 // (not just Maxim/Dallas temperature ICs) 

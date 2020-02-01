@@ -8,7 +8,7 @@
 #endif
 
 #define GPS_SERIAL Serial1
-#define GPS_POWER_PIN 1
+#define GPS_POWER_PIN 3
 #define GPS_BAUD 9600
 
 

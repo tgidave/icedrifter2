@@ -1,2 +1,2 @@
-# icedrifter2
-Version 2 of the Icedrifter
+# icedrifter
+buoy sensor to monitor iceberg melting

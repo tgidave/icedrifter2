@@ -26,7 +26,7 @@
 #define BME_MOSI 17
 #define BME_CS 10
 
-#define BME280_POWER 20
+#define BME280_POWER 30
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
@@ -37,7 +37,7 @@ Adafruit_BME280 bme; // I2C
 unsigned long delayTime;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial);    // time to get serial running
   Serial.println(F("BME280 test"));
 

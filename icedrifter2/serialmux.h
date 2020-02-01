@@ -26,29 +26,15 @@
 #ifndef _SERIAL_MUX_H
 #define _SERIAL_MUX_H
 
-enum muxCmd {
-  muxOff,        
-  muxGPS,        
-  muxRockBlock,  
-  muxChain,
-  muxCmdMax,      
-};
-
-enum muxIx {
-  muxINH,
-  muxA,
-  muxB,
-};
-
-#define muxINHPort  19
+#define muxINHPort  14
 #define muxAPort    13
 #define muxBPort    12
   
-void serialMuxInit(void);
-void serialMuxSetToOff(void);
-void serialMuxSetToGPS(void);
-void serialMuxSetToRockBlock(void);
-void serialMuxSetToChain(void);
+void setSerialMuxInit(void);
+void setSerialMuxOff(void);
+void setSerialMuxToGPS(void);
+void setSerialMuxToRockBlock(void);
+void setSerialMuxToChain(void);
 
 #endif // _SERIAL_MUX_H
 

@@ -40,7 +40,7 @@ enum muxIx {
   muxB,
 };
 
-#define muxINHPort  19
+#define muxINHPort  14
 #define muxAPort    13
 #define muxBPort    12
   

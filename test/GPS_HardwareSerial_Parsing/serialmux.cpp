@@ -37,7 +37,7 @@ void setSerialMuxInit() {
   pinMode(muxINHPort, OUTPUT);
   pinMode(muxAPort, OUTPUT);
   pinMode(muxBPort, OUTPUT);
-  digitalWrite(muxardINHPort, HIGH);
+  digitalWrite(muxINHPort, HIGH);
   digitalWrite(muxAPort, LOW);
   digitalWrite(muxBPort, LOW);
 }

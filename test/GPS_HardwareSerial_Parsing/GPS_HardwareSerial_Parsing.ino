@@ -20,33 +20,34 @@
 // what's the name of the hardware serial port?
 #define GPSSerial Serial1
 
-#define GPS_POWER 1
+#define GPS_POWER 3
 
 // Connect to the GPS on the hardware port
 Adafruit_GPS GPS(&GPSSerial);
      
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
+//#define GPSECHO false
 #define GPSECHO false
 
 uint32_t timer = millis();
 
 void setup()
 { 
+
+  // connect at 115200 so we can read the GPS fast enough and echo without dropping chars
+  // also spit it out
+  while (!Serial);  // uncomment to have the sketch wait until Serial is ready
+
+  Serial.begin(115200);
+  Serial.println("GPS basic test!");
+
   pinMode(GPS_POWER, OUTPUT);
-  digitalWrite(GPS_POWER, HIGH);
-  delay(1000); 
+  digitalWrite(GPS_POWER, LOW);
 
   setSerialMuxInit();
   setSerialMuxToGPS();
 
-  //while (!Serial);  // uncomment to have the sketch wait until Serial is ready
-  
-  // connect at 115200 so we can read the GPS fast enough and echo without dropping chars
-  // also spit it out
-  Serial.begin(115200);
-  Serial.println("Adafruit GPS library basic test!");
-     
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
   GPS.begin(9600);
   // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
