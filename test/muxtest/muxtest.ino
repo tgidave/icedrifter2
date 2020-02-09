@@ -2,6 +2,9 @@
  Muxtest
 
 */
+
+#define GPS_POWER_PIN 3
+
 enum muxCmd {
   muxOff,
   muxGPS,
@@ -12,8 +15,8 @@ enum muxCmd {
 
 enum muxIx {
   muxINH,
-  muxA,
   muxB,
+  muxA,
 };
 
 const uint8_t muxTable[4][3] = {
@@ -40,24 +43,29 @@ void setup() {
   // initialize digital pin LED_BUILTIN as an output.
 
   Serial.begin(115200);
-  Serial.print(F("Mux test...\n"));
+
+  pinMode(GPS_POWER_PIN, OUTPUT);
+  digitalWrite(GPS_POWER_PIN, HIGH);
 
   pinMode(muxINHPort, OUTPUT);
   pinMode(muxAPort, OUTPUT);
   pinMode(muxBPort, OUTPUT);
+  pinMode(RXD1, OUTPUT);
+  pinMode(TXD1, OUTPUT);
   SetSerialMuxOff();
 }
 
 // the loop function runs over and over again forever
 void loop() {
+  Serial.print(F("Mux test...\n"));
+  delay(1000);
+
   digitalWrite(RXD1, HIGH); 
   digitalWrite(TXD1, HIGH);
 
-  SetSerialMuxToGPS();
+  SetSerialMuxToRockblock();
 
-  while (0) {
-    delay(1000);
-  }
+  delay(1000);
 }
 
 void SetSerialMux(int muxCommand) {
